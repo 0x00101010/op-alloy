@@ -13,12 +13,13 @@ use alloy_eips::{
 };
 use alloy_primitives::{Bloom, Log};
 use alloy_rlp::{BufMut, Decodable, Encodable, Header};
-use serde::{Deserialize, Serialize};
 
 /// Typed Optimism transaction receipt.
 ///
 /// Receipt containing result of transaction execution.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum OpReceipt {
     /// Legacy receipt
     Legacy(Receipt),
@@ -47,10 +48,10 @@ impl OpReceipt {
     /// Returns inner [`Receipt`].
     pub const fn as_receipt(&self) -> &Receipt {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => receipt,
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => receipt,
             Self::Deposit(receipt) => &receipt.inner,
         }
     }
@@ -58,10 +59,10 @@ impl OpReceipt {
     /// Returns a mutable reference to the inner [`Receipt`].
     pub const fn as_receipt_mut(&mut self) -> &mut Receipt {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => receipt,
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => receipt,
             Self::Deposit(receipt) => &mut receipt.inner,
         }
     }
@@ -69,10 +70,10 @@ impl OpReceipt {
     /// Consumes this and returns the inner [`Receipt`].
     pub fn into_receipt(self) -> Receipt {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => receipt,
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => receipt,
             Self::Deposit(receipt) => receipt.inner,
         }
     }
@@ -80,10 +81,10 @@ impl OpReceipt {
     /// Returns length of RLP-encoded receipt fields with the given [`Bloom`] without an RLP header.
     pub fn rlp_encoded_fields_length(&self, bloom: &Bloom) -> usize {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => receipt.rlp_encoded_fields_length_with_bloom(bloom),
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => receipt.rlp_encoded_fields_length_with_bloom(bloom),
             Self::Deposit(receipt) => receipt.rlp_encoded_fields_length_with_bloom(bloom),
         }
     }
@@ -91,10 +92,10 @@ impl OpReceipt {
     /// RLP-encodes receipt fields with the given [`Bloom`] without an RLP header.
     pub fn rlp_encode_fields(&self, bloom: &Bloom, out: &mut dyn BufMut) {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => receipt.rlp_encode_fields_with_bloom(bloom, out),
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => receipt.rlp_encode_fields_with_bloom(bloom, out),
             Self::Deposit(receipt) => receipt.rlp_encode_fields_with_bloom(bloom, out),
         }
     }
@@ -147,10 +148,10 @@ impl OpReceipt {
     /// RLP-encodes receipt fields without an RLP header.
     pub fn rlp_encode_fields_without_bloom(&self, out: &mut dyn BufMut) {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => {
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => {
                 receipt.status.encode(out);
                 receipt.cumulative_gas_used.encode(out);
                 receipt.logs.encode(out);
@@ -172,20 +173,20 @@ impl OpReceipt {
     /// Returns length of RLP-encoded receipt fields without an RLP header.
     pub fn rlp_encoded_fields_length_without_bloom(&self) -> usize {
         match self {
-            Self::Legacy(receipt)
-            | Self::Eip2930(receipt)
-            | Self::Eip1559(receipt)
-            | Self::Eip7702(receipt) => {
-                receipt.status.length()
-                    + receipt.cumulative_gas_used.length()
-                    + receipt.logs.length()
+            Self::Legacy(receipt) |
+            Self::Eip2930(receipt) |
+            Self::Eip1559(receipt) |
+            Self::Eip7702(receipt) => {
+                receipt.status.length() +
+                    receipt.cumulative_gas_used.length() +
+                    receipt.logs.length()
             }
             Self::Deposit(receipt) => {
-                receipt.inner.status.length()
-                    + receipt.inner.cumulative_gas_used.length()
-                    + receipt.inner.logs.length()
-                    + receipt.deposit_nonce.map_or(0, |nonce| nonce.length())
-                    + receipt.deposit_receipt_version.map_or(0, |version| version.length())
+                receipt.inner.status.length() +
+                    receipt.inner.cumulative_gas_used.length() +
+                    receipt.inner.logs.length() +
+                    receipt.deposit_nonce.map_or(0, |nonce| nonce.length()) +
+                    receipt.deposit_receipt_version.map_or(0, |version| version.length())
             }
         }
     }
@@ -411,6 +412,129 @@ impl From<super::OpReceiptEnvelope> for OpReceipt {
                 deposit_receipt_version: receipt.receipt.deposit_receipt_version,
                 inner: receipt.receipt.inner,
             }),
+        }
+    }
+}
+
+#[cfg(all(feature = "serde", feature = "serde-bincode-compat"))]
+pub(super) mod serde_bincode_compat {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde_with::{DeserializeAs, SerializeAs};
+
+    /// Bincode-compatible [`super::OpReceipt`] serde implementation.
+    ///
+    /// Intended to use with the [`serde_with::serde_as`] macro in the following way:
+    /// ```rust
+    /// use op_alloy_consensus::{serde_bincode_compat, OpReceipt};
+    /// use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    /// use serde_with::serde_as;
+    ///
+    /// #[serde_as]
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Data {
+    ///     #[serde_as(as = "serde_bincode_compat::OpReceipt<'_>")]
+    ///     receipt: OpReceipt,
+    /// }
+    /// ```
+    #[derive(Debug, Serialize, Deserialize)]
+    pub enum OpReceipt<'a> {
+        /// Legacy receipt
+        Legacy(alloy_consensus::serde_bincode_compat::Receipt<'a, alloy_primitives::Log>),
+        /// EIP-2930 receipt
+        Eip2930(alloy_consensus::serde_bincode_compat::Receipt<'a, alloy_primitives::Log>),
+        /// EIP-1559 receipt
+        Eip1559(alloy_consensus::serde_bincode_compat::Receipt<'a, alloy_primitives::Log>),
+        /// EIP-7702 receipt
+        Eip7702(alloy_consensus::serde_bincode_compat::Receipt<'a, alloy_primitives::Log>),
+        /// Deposit receipt
+        Deposit(
+            op_alloy_consensus::serde_bincode_compat::OpDepositReceipt<'a, alloy_primitives::Log>,
+        ),
+    }
+
+    impl<'a> From<&'a super::OpReceipt> for OpReceipt<'a> {
+        fn from(value: &'a super::OpReceipt) -> Self {
+            match value {
+                super::OpReceipt::Legacy(receipt) => Self::Legacy(receipt.into()),
+                super::OpReceipt::Eip2930(receipt) => Self::Eip2930(receipt.into()),
+                super::OpReceipt::Eip1559(receipt) => Self::Eip1559(receipt.into()),
+                super::OpReceipt::Eip7702(receipt) => Self::Eip7702(receipt.into()),
+                super::OpReceipt::Deposit(receipt) => Self::Deposit(receipt.into()),
+            }
+        }
+    }
+
+    impl<'a> From<OpReceipt<'a>> for super::OpReceipt {
+        fn from(value: OpReceipt<'a>) -> Self {
+            match value {
+                OpReceipt::Legacy(receipt) => Self::Legacy(receipt.into()),
+                OpReceipt::Eip2930(receipt) => Self::Eip2930(receipt.into()),
+                OpReceipt::Eip1559(receipt) => Self::Eip1559(receipt.into()),
+                OpReceipt::Eip7702(receipt) => Self::Eip7702(receipt.into()),
+                OpReceipt::Deposit(receipt) => Self::Deposit(receipt.into()),
+            }
+        }
+    }
+
+    impl SerializeAs<super::OpReceipt> for OpReceipt<'_> {
+        fn serialize_as<S>(source: &super::OpReceipt, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            OpReceipt::<'_>::from(source).serialize(serializer)
+        }
+    }
+
+    impl<'de> DeserializeAs<'de, super::OpReceipt> for OpReceipt<'de> {
+        fn deserialize_as<D>(deserializer: D) -> Result<super::OpReceipt, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            OpReceipt::<'_>::deserialize(deserializer).map(Into::into)
+        }
+    }
+
+    impl reth_primitives_traits::serde_bincode_compat::SerdeBincodeCompat for super::OpReceipt {
+        type BincodeRepr<'a> = OpReceipt<'a>;
+
+        fn as_repr(&self) -> Self::BincodeRepr<'_> {
+            self.into()
+        }
+
+        fn from_repr(repr: Self::BincodeRepr<'_>) -> Self {
+            repr.into()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use crate::{receipts::serde_bincode_compat, OpReceipt};
+        use arbitrary::Arbitrary;
+        use rand::Rng;
+        use serde::{Deserialize, Serialize};
+        use serde_with::serde_as;
+
+        #[test]
+        fn test_tx_bincode_roundtrip() {
+            #[serde_as]
+            #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+            struct Data {
+                #[serde_as(as = "serde_bincode_compat::OpReceipt<'_>")]
+                receipt: OpReceipt,
+            }
+
+            let mut bytes = [0u8; 1024];
+            rand::rng().fill(bytes.as_mut_slice());
+            let mut data = Data {
+                receipt: OpReceipt::arbitrary(&mut arbitrary::Unstructured::new(&bytes)).unwrap(),
+            };
+            let success = data.receipt.as_receipt_mut().status.coerce_status();
+            // // ensure we don't have an invalid poststate variant
+            data.receipt.as_receipt_mut().status = success.into();
+
+            let encoded = bincode::serialize(&data).unwrap();
+            let decoded: Data = bincode::deserialize(&encoded).unwrap();
+            assert_eq!(decoded, data);
         }
     }
 }
