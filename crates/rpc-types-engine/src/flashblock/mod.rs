@@ -49,13 +49,19 @@
 //! - The sequence must contain at least one flashblock
 
 mod base;
-pub use base::{OpFlashblockExecutionPayloadBase, OpFlashblockExecutionPayloadBaseV1};
+pub use base::{
+    OpFlashblockExecutionPayloadBase, OpFlashblockExecutionPayloadBaseRef,
+    OpFlashblockExecutionPayloadBaseV1,
+};
 
 mod delta;
-pub use delta::{OpFlashblockExecutionPayloadDelta, OpFlashblockExecutionPayloadDeltaV1};
+pub use delta::{
+    OpFlashblockExecutionPayloadDelta, OpFlashblockExecutionPayloadDeltaRef,
+    OpFlashblockExecutionPayloadDeltaV1,
+};
 
 mod metadata;
-pub use metadata::{OpFlashblockMetadata, OpFlashblockMetadataV1};
+pub use metadata::{OpFlashblockMetadata, OpFlashblockMetadataRef, OpFlashblockMetadataV1};
 
 mod payload;
 pub use payload::{OpFlashblockPayload, OpFlashblockPayloadV1};

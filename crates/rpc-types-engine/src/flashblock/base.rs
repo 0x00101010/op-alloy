@@ -13,67 +13,22 @@ pub enum OpFlashblockExecutionPayloadBase {
     V1(OpFlashblockExecutionPayloadBaseV1),
 }
 
-impl OpFlashblockExecutionPayloadBase {
-    /// Returns the parent beacon block root.
-    pub const fn parent_beacon_block_root(&self) -> B256 {
-        match self {
-            Self::V1(base) => base.parent_beacon_block_root,
-        }
-    }
+/// Borrowed reference to execution payload base.
+///
+/// This enum allows for future versioning of flashblock execution payload base types
+/// while providing zero-cost access to the inner fields via [`Deref`](core::ops::Deref).
+#[derive(Debug, Clone, Copy)]
+pub enum OpFlashblockExecutionPayloadBaseRef<'a> {
+    /// Version 1 execution payload base reference.
+    V1(&'a OpFlashblockExecutionPayloadBaseV1),
+}
 
-    /// Returns the parent hash.
-    pub const fn parent_hash(&self) -> B256 {
-        match self {
-            Self::V1(base) => base.parent_hash,
-        }
-    }
+impl<'a> core::ops::Deref for OpFlashblockExecutionPayloadBaseRef<'a> {
+    type Target = OpFlashblockExecutionPayloadBaseV1;
 
-    /// Returns the fee recipient address.
-    pub const fn fee_recipient(&self) -> Address {
+    fn deref(&self) -> &Self::Target {
         match self {
-            Self::V1(base) => base.fee_recipient,
-        }
-    }
-
-    /// Returns the previous randao value.
-    pub const fn prev_randao(&self) -> B256 {
-        match self {
-            Self::V1(base) => base.prev_randao,
-        }
-    }
-
-    /// Returns the block number.
-    pub const fn block_number(&self) -> u64 {
-        match self {
-            Self::V1(base) => base.block_number,
-        }
-    }
-
-    /// Returns the gas limit.
-    pub const fn gas_limit(&self) -> u64 {
-        match self {
-            Self::V1(base) => base.gas_limit,
-        }
-    }
-
-    /// Returns the timestamp.
-    pub const fn timestamp(&self) -> u64 {
-        match self {
-            Self::V1(base) => base.timestamp,
-        }
-    }
-
-    /// Returns the extra data.
-    pub fn extra_data(&self) -> Bytes {
-        match self {
-            Self::V1(base) => base.extra_data.clone(),
-        }
-    }
-
-    /// Returns the base fee per gas.
-    pub const fn base_fee_per_gas(&self) -> U256 {
-        match self {
-            Self::V1(base) => base.base_fee_per_gas,
+            Self::V1(inner) => inner,
         }
     }
 }

@@ -1,6 +1,10 @@
 //! Flashblock payload types.
 
-use super::{OpFlashblockExecutionPayloadBase, OpFlashblockExecutionPayloadBaseV1, OpFlashblockExecutionPayloadDelta, OpFlashblockExecutionPayloadDeltaV1, OpFlashblockMetadata, OpFlashblockMetadataV1};
+use super::{
+    OpFlashblockExecutionPayloadBaseRef, OpFlashblockExecutionPayloadBaseV1,
+    OpFlashblockExecutionPayloadDeltaRef, OpFlashblockExecutionPayloadDeltaV1,
+    OpFlashblockMetadataRef, OpFlashblockMetadataV1,
+};
 use alloy_primitives::B256;
 use alloy_rpc_types_engine::PayloadId;
 
@@ -28,23 +32,9 @@ pub struct OpFlashblockPayloadV1 {
     pub metadata: OpFlashblockMetadataV1,
 }
 
-impl OpFlashblockPayloadV1 {
-    /// Returns the block number of this flashblock.
-    pub const fn block_number(&self) -> u64 {
-        self.metadata.block_number
-    }
-
-    /// Returns the parent hash of this flashblock, if the base is present.
-    pub const fn parent_hash(&self) -> Option<B256> {
-        match &self.base {
-            Some(base) => Some(base.parent_hash),
-            None => None,
-        }
-    }
-
-    /// Returns the receipt for the given transaction hash.
-    pub fn receipt_by_hash(&self, hash: &B256) -> Option<&op_alloy_consensus::OpReceipt> {
-        self.metadata.receipts.get(hash)
+impl From<OpFlashblockPayloadV1> for OpFlashblockPayload {
+    fn from(payload: OpFlashblockPayloadV1) -> Self {
+        Self::V1(payload)
     }
 }
 
@@ -66,27 +56,6 @@ impl Default for OpFlashblockPayload {
 }
 
 impl OpFlashblockPayload {
-    /// Returns the block number of this flashblock.
-    pub const fn block_number(&self) -> u64 {
-        match self {
-            Self::V1(payload) => payload.block_number(),
-        }
-    }
-
-    /// Returns the parent hash of this flashblock, if the base is present.
-    pub const fn parent_hash(&self) -> Option<B256> {
-        match self {
-            Self::V1(payload) => payload.parent_hash(),
-        }
-    }
-
-    /// Returns the receipt for the given transaction hash.
-    pub fn receipt_by_hash(&self, hash: &B256) -> Option<&op_alloy_consensus::OpReceipt> {
-        match self {
-            Self::V1(payload) => payload.receipt_by_hash(hash),
-        }
-    }
-
     /// Returns the payload ID.
     pub const fn payload_id(&self) -> &PayloadId {
         match self {
@@ -102,30 +71,30 @@ impl OpFlashblockPayload {
     }
 
     /// Returns a reference to the base execution payload, if present.
-    pub fn base(&self) -> Option<OpFlashblockExecutionPayloadBase> {
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub fn base(&self) -> Option<OpFlashblockExecutionPayloadBaseRef<'_>> {
         match self {
-            Self::V1(payload) => payload.base.clone().map(OpFlashblockExecutionPayloadBase::V1),
+            Self::V1(payload) => payload.base.as_ref().map(OpFlashblockExecutionPayloadBaseRef::V1),
         }
     }
 
     /// Returns a reference to the diff execution payload.
-    pub fn diff(&self) -> OpFlashblockExecutionPayloadDelta {
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub fn diff(&self) -> OpFlashblockExecutionPayloadDeltaRef<'_> {
         match self {
-            Self::V1(payload) => OpFlashblockExecutionPayloadDelta::V1(payload.diff.clone()),
+            Self::V1(payload) => OpFlashblockExecutionPayloadDeltaRef::V1(&payload.diff),
         }
     }
 
     /// Returns a reference to the metadata.
-    pub fn metadata(&self) -> OpFlashblockMetadata {
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub fn metadata(&self) -> OpFlashblockMetadataRef<'_> {
         match self {
-            Self::V1(payload) => OpFlashblockMetadata::V1(payload.metadata.clone()),
+            Self::V1(payload) => OpFlashblockMetadataRef::V1(&payload.metadata),
         }
-    }
-}
-
-impl From<OpFlashblockPayloadV1> for OpFlashblockPayload {
-    fn from(payload: OpFlashblockPayloadV1) -> Self {
-        Self::V1(payload)
     }
 }
 
@@ -182,9 +151,10 @@ mod tests {
     fn test_payload_accessors() {
         let payload = sample_payload();
 
-        assert_eq!(payload.block_number(), 100);
-        assert_eq!(payload.parent_hash(), Some(B256::ZERO));
-        assert!(payload.receipt_by_hash(&B256::ZERO).is_none());
+        // Direct field access via public fields
+        assert_eq!(payload.metadata.block_number, 100);
+        assert_eq!(payload.base.as_ref().map(|b| b.parent_hash), Some(B256::ZERO));
+        assert!(payload.metadata.receipts.get(&B256::ZERO).is_none());
     }
 
     #[test]
@@ -192,8 +162,9 @@ mod tests {
         let mut payload = sample_payload();
         payload.base = None;
 
-        assert_eq!(payload.block_number(), 100);
-        assert_eq!(payload.parent_hash(), None);
+        // Direct field access via public fields
+        assert_eq!(payload.metadata.block_number, 100);
+        assert_eq!(payload.base.as_ref().map(|b| b.parent_hash), None);
     }
 
     #[test]
@@ -201,8 +172,12 @@ mod tests {
         let payload_v1 = sample_payload();
         let payload = OpFlashblockPayload::V1(payload_v1.clone());
 
-        assert_eq!(payload.block_number(), payload_v1.block_number());
-        assert_eq!(payload.parent_hash(), payload_v1.parent_hash());
+        // Using enum accessor methods that return Ref types with Deref
+        assert_eq!(payload.metadata().block_number, payload_v1.metadata.block_number);
+        assert_eq!(
+            payload.base().map(|b| b.parent_hash),
+            payload_v1.base.as_ref().map(|b| b.parent_hash)
+        );
         assert_eq!(payload.payload_id(), &payload_v1.payload_id);
         assert_eq!(payload.index(), payload_v1.index);
     }

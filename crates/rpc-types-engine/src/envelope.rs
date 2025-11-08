@@ -184,36 +184,43 @@ impl OpExecutionData {
             .diff();
 
         // Collect all transactions from all flashblocks
-        let transactions = flashblocks
+        let transactions: Vec<_> = flashblocks
             .iter()
-            .flat_map(|p| p.diff().transactions().to_vec())
+            .flat_map(|p| {
+                let diff = p.diff();
+                diff.transactions.iter().cloned().collect::<Vec<_>>()
+            })
             .collect();
 
         // Collect all withdrawals from all flashblocks
-        let withdrawals = flashblocks
+        let withdrawals: Vec<_> = flashblocks
             .iter()
-            .flat_map(|p| p.diff().withdrawals().to_vec())
+            .flat_map(|p| {
+                let diff = p.diff();
+                diff.withdrawals.iter().cloned().collect::<Vec<_>>()
+            })
             .collect();
 
         let v3 = ExecutionPayloadV3 {
+            // Flashblocks don't include blob data, so these are set to 0
             blob_gas_used: 0,
             excess_blob_gas: 0,
             payload_inner: ExecutionPayloadV2 {
                 withdrawals,
                 payload_inner: ExecutionPayloadV1 {
-                    parent_hash: base.parent_hash(),
-                    fee_recipient: base.fee_recipient(),
-                    state_root: diff.state_root(),
-                    receipts_root: diff.receipts_root(),
-                    logs_bloom: diff.logs_bloom(),
-                    prev_randao: base.prev_randao(),
-                    block_number: base.block_number(),
-                    gas_limit: base.gas_limit(),
-                    gas_used: diff.gas_used(),
-                    timestamp: base.timestamp(),
-                    extra_data: base.extra_data(),
-                    base_fee_per_gas: base.base_fee_per_gas(),
-                    block_hash: diff.block_hash(),
+                    parent_hash: base.parent_hash,
+                    fee_recipient: base.fee_recipient,
+                    state_root: diff.state_root,
+                    receipts_root: diff.receipts_root,
+                    logs_bloom: diff.logs_bloom,
+                    prev_randao: base.prev_randao,
+                    block_number: base.block_number,
+                    gas_limit: base.gas_limit,
+                    gas_used: diff.gas_used,
+                    timestamp: base.timestamp,
+                    extra_data: base.extra_data.clone(),
+                    base_fee_per_gas: base.base_fee_per_gas,
+                    block_hash: diff.block_hash,
                     transactions,
                 },
             },
@@ -221,17 +228,16 @@ impl OpExecutionData {
 
         // Before Isthmus hardfork, withdrawals_root was not included.
         // A zero withdrawals_root indicates a pre-Isthmus flashblock.
-        if diff.withdrawals_root() == B256::ZERO {
-            return Ok(Self::v3(v3,  vec![], base.parent_beacon_block_root()))
+        if diff.withdrawals_root == B256::ZERO {
+            return Ok(Self::v3(v3, vec![], base.parent_beacon_block_root))
         }
 
         let v4 = OpExecutionPayloadV4 {
-            withdrawals_root: diff.withdrawals_root(),
+            withdrawals_root: diff.withdrawals_root,
             payload_inner: v3,
         };
 
-
-        Ok(Self::v4(v4, vec![], base.parent_beacon_block_root(), Default::default()))
+        Ok(Self::v4(v4, vec![], base.parent_beacon_block_root, Default::default()))
     }
 
     /// Creates a new instance from args to engine API method `newPayloadV2`.
