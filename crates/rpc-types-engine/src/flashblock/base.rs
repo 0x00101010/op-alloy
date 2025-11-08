@@ -13,6 +13,17 @@ pub enum OpFlashblockExecutionPayloadBase {
     V1(OpFlashblockExecutionPayloadBaseV1),
 }
 
+impl OpFlashblockExecutionPayloadBase {
+    /// Returns a reference to the base execution payload.
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub const fn as_ref(&self) -> OpFlashblockExecutionPayloadBaseRef<'_> {
+        match self {
+            Self::V1(base) => OpFlashblockExecutionPayloadBaseRef::V1(base),
+        }
+    }
+}
+
 /// Borrowed reference to execution payload base.
 ///
 /// This enum allows for future versioning of flashblock execution payload base types

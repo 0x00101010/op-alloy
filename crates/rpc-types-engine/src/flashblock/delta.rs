@@ -15,6 +15,17 @@ pub enum OpFlashblockExecutionPayloadDelta {
     V1(OpFlashblockExecutionPayloadDeltaV1),
 }
 
+impl OpFlashblockExecutionPayloadDelta {
+    /// Returns a reference to the delta execution payload.
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub const fn as_ref(&self) -> OpFlashblockExecutionPayloadDeltaRef<'_> {
+        match self {
+            Self::V1(delta) => OpFlashblockExecutionPayloadDeltaRef::V1(delta),
+        }
+    }
+}
+
 /// Borrowed reference to execution payload delta.
 ///
 /// This enum allows for future versioning of flashblock execution payload delta types

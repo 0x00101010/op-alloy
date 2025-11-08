@@ -15,6 +15,17 @@ pub enum OpFlashblockMetadata {
     V1(OpFlashblockMetadataV1),
 }
 
+impl OpFlashblockMetadata {
+    /// Returns a reference to the flashblock metadata.
+    ///
+    /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
+    pub const fn as_ref(&self) -> OpFlashblockMetadataRef<'_> {
+        match self {
+            Self::V1(metadata) => OpFlashblockMetadataRef::V1(metadata),
+        }
+    }
+}
+
 /// Borrowed reference to flashblock metadata.
 ///
 /// This enum allows for future versioning of flashblock metadata types
