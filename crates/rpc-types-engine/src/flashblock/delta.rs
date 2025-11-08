@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn test_delta_camel_case_serialization() {
+    fn test_delta_snake_case_serialization() {
         let delta = OpFlashblockExecutionPayloadDeltaV1 {
             state_root: B256::ZERO,
             receipts_root: B256::ZERO,

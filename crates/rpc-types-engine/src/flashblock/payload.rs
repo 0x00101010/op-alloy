@@ -81,7 +81,7 @@ impl OpFlashblockPayload {
     /// Returns a reference to the diff execution payload.
     ///
     /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
-    pub fn diff(&self) -> OpFlashblockExecutionPayloadDeltaRef<'_> {
+    pub const fn diff(&self) -> OpFlashblockExecutionPayloadDeltaRef<'_> {
         match self {
             Self::V1(payload) => OpFlashblockExecutionPayloadDeltaRef::V1(&payload.diff),
         }
@@ -90,7 +90,7 @@ impl OpFlashblockPayload {
     /// Returns a reference to the metadata.
     ///
     /// The returned reference type implements [`Deref`](core::ops::Deref) for direct field access.
-    pub fn metadata(&self) -> OpFlashblockMetadataRef<'_> {
+    pub const fn metadata(&self) -> OpFlashblockMetadataRef<'_> {
         match self {
             Self::V1(payload) => OpFlashblockMetadataRef::V1(&payload.metadata),
         }
@@ -153,7 +153,7 @@ mod tests {
         // Direct field access via public fields
         assert_eq!(payload.metadata.block_number, 100);
         assert_eq!(payload.base.as_ref().map(|b| b.parent_hash), Some(B256::ZERO));
-        assert!(payload.metadata.receipts.get(&B256::ZERO).is_none());
+        assert!(!payload.metadata.receipts.contains_key(&B256::ZERO));
     }
 
     #[test]

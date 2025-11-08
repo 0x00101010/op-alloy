@@ -156,7 +156,17 @@ impl OpExecutionData {
     /// Conversion from a vec of [`OpFlashblockPayload`]. Also returns the
     /// [`OpExecutionPayloadSidecar`] extracted from the payloads.
     ///
-    /// Note: This does validation to make sure input are valid.
+    /// # Validation
+    ///
+    /// This method performs the following validations:
+    /// - At least one flashblock must be present
+    /// - Indices must be sequential starting from 0
+    /// - First flashblock (index 0) must have a base payload
+    /// - Only the first flashblock may have a base payload
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any validation fails.
     pub fn from_flashblocks(
         flashblocks: Vec<OpFlashblockPayload>,
     ) -> Result<Self, OpFlashblockError> {
@@ -174,9 +184,6 @@ impl OpExecutionData {
 
         // Validate first flashblock has base and extract it
         let first = flashblocks.first().unwrap(); // Safe: checked empty above
-        if first.index() != 0 {
-            return Err(OpFlashblockError::InvalidIndex);
-        }
         let base = first.base().ok_or(OpFlashblockError::MissingBasePayload)?;
 
         // Validate no other flashblocks have base (only first should have it)
@@ -187,31 +194,18 @@ impl OpExecutionData {
         }
 
         // Get the final state from the last flashblock
-        let diff = flashblocks
-            .last()
-            .unwrap() // Safe: checked empty above
-            .diff();
+        let diff = flashblocks.last().unwrap().diff();
 
-        // Collect all transactions from all flashblocks
-        let transactions: Vec<_> = flashblocks
-            .iter()
-            .flat_map(|p| {
+        // Collect all transactions and withdrawals from all flashblocks in one loop
+        let (transactions, withdrawals) =
+            flashblocks.iter().fold((Vec::new(), Vec::new()), |(mut txs, mut withdrawals), p| {
                 let diff = p.diff();
-                diff.transactions.iter().cloned().collect::<Vec<_>>()
-            })
-            .collect();
-
-        // Collect all withdrawals from all flashblocks
-        let withdrawals: Vec<_> = flashblocks
-            .iter()
-            .flat_map(|p| {
-                let diff = p.diff();
-                diff.withdrawals.iter().cloned().collect::<Vec<_>>()
-            })
-            .collect();
+                txs.extend(diff.transactions.iter().cloned());
+                withdrawals.extend(diff.withdrawals.iter().cloned());
+                (txs, withdrawals)
+            });
 
         let v3 = ExecutionPayloadV3 {
-            // Flashblocks don't include blob data, so these are set to 0
             blob_gas_used: 0,
             excess_blob_gas: 0,
             payload_inner: ExecutionPayloadV2 {
@@ -808,11 +802,7 @@ mod tests {
 
     #[test]
     fn test_from_flashblocks_wrong_first_index() {
-        let mut fb1 = create_test_flashblock(1, true); // Should be index 0
-        if let OpFlashblockPayload::V1(ref mut payload) = fb1 {
-            payload.index = 1;
-        }
-
+        let fb1 = create_test_flashblock(1, true); // Should be index 0
         let result = OpExecutionData::from_flashblocks(vec![fb1]);
         assert!(matches!(result, Err(OpFlashblockError::InvalidIndex)));
     }
