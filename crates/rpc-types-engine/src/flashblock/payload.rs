@@ -5,7 +5,6 @@ use super::{
     OpFlashblockExecutionPayloadDeltaRef, OpFlashblockExecutionPayloadDeltaV1,
     OpFlashblockMetadataRef, OpFlashblockMetadataV1,
 };
-use alloy_primitives::B256;
 use alloy_rpc_types_engine::PayloadId;
 
 /// Flashblock payload version 1.
@@ -106,7 +105,7 @@ mod tests {
         OpFlashblockMetadataV1,
     };
     use alloc::collections::BTreeMap;
-    use alloy_primitives::{Bloom, Bytes, U256, address};
+    use alloy_primitives::{B256, Bloom, Bytes, U256, address};
 
     fn sample_payload() -> OpFlashblockPayloadV1 {
         let base = OpFlashblockExecutionPayloadBaseV1 {

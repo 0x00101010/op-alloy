@@ -14,11 +14,11 @@
 //! A flashblock sequence consists of:
 //!
 //! - **Base payload** ([`OpFlashblockExecutionPayloadBase`]): Immutable block properties that
-//!   remain constant throughout the block construction. Only present in the first flashblock
-//!   (index 0).
+//!   remain constant throughout the block construction. Only present in the first flashblock (index
+//!   0).
 //!
 //! - **Delta payloads** ([`OpFlashblockExecutionPayloadDelta`]): Mutable/accumulating properties
-//!   that change as transactions are added. Present in all flashblocks. 
+//!   that change as transactions are added. Present in all flashblocks.
 //!
 //! - **Metadata** ([`OpFlashblockMetadata`]): Additional information useful for indexing and
 //!   analysis.

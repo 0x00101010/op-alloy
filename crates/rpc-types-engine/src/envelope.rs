@@ -3,12 +3,18 @@
 //! This module uses the `snappy` compression algorithm to decompress the payload.
 //! The license for snappy can be found in the `SNAPPY-LICENSE` at the root of the repository.
 
-use crate::{OpExecutionPayload, OpExecutionPayloadSidecar, OpExecutionPayloadV4, OpFlashblockPayload, OpFlashblockError};
+use crate::{
+    OpExecutionPayload, OpExecutionPayloadSidecar, OpExecutionPayloadV4, OpFlashblockError,
+    OpFlashblockPayload,
+};
 use alloc::vec::Vec;
 use alloy_consensus::{Block, BlockHeader, Sealable, Transaction};
 use alloy_eips::{Encodable2718, eip4895::Withdrawal, eip7685::Requests};
 use alloy_primitives::{B256, Signature, keccak256};
-use alloy_rpc_types_engine::{CancunPayloadFields, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV2, ExecutionPayloadV3, PraguePayloadFields};
+use alloy_rpc_types_engine::{
+    CancunPayloadFields, ExecutionPayloadInputV2, ExecutionPayloadV1, ExecutionPayloadV2,
+    ExecutionPayloadV3, PraguePayloadFields,
+};
 
 /// A thin wrapper around [`OpExecutionPayload`] that includes the parent beacon block root.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -151,7 +157,9 @@ impl OpExecutionData {
     /// [`OpExecutionPayloadSidecar`] extracted from the payloads.
     ///
     /// Note: This does validation to make sure input are valid.
-    pub fn from_flashblocks(flashblocks: Vec<OpFlashblockPayload>) -> Result<Self, OpFlashblockError> {
+    pub fn from_flashblocks(
+        flashblocks: Vec<OpFlashblockPayload>,
+    ) -> Result<Self, OpFlashblockError> {
         // Validate we have at least one flashblock
         if flashblocks.is_empty() {
             return Err(OpFlashblockError::MissingPayload);
@@ -180,7 +188,8 @@ impl OpExecutionData {
 
         // Get the final state from the last flashblock
         let diff = flashblocks
-            .last().unwrap() // Safe: checked empty above
+            .last()
+            .unwrap() // Safe: checked empty above
             .diff();
 
         // Collect all transactions from all flashblocks
@@ -229,13 +238,11 @@ impl OpExecutionData {
         // Before Isthmus hardfork, withdrawals_root was not included.
         // A zero withdrawals_root indicates a pre-Isthmus flashblock.
         if diff.withdrawals_root == B256::ZERO {
-            return Ok(Self::v3(v3, vec![], base.parent_beacon_block_root))
+            return Ok(Self::v3(v3, vec![], base.parent_beacon_block_root));
         }
 
-        let v4 = OpExecutionPayloadV4 {
-            withdrawals_root: diff.withdrawals_root,
-            payload_inner: v3,
-        };
+        let v4 =
+            OpExecutionPayloadV4 { withdrawals_root: diff.withdrawals_root, payload_inner: v3 };
 
         Ok(Self::v4(v4, vec![], base.parent_beacon_block_root, Default::default()))
     }
